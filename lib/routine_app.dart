@@ -352,7 +352,7 @@ class _SchedulePageState extends State<SchedulePage> {
                             if (_storageError != null) ...[
                               const SizedBox(height: 18),
                               Surface(
-                                color: const Color(0xfff5dfcb),
+                                color: const Color(0xfffff7d1),
                                 padding: const EdgeInsets.all(13),
                                 child: Row(
                                   children: [
@@ -401,7 +401,7 @@ class _SchedulePageState extends State<SchedulePage> {
         if (!desktop) ...[
           const Icon(
             Icons.calendar_month_outlined,
-            color: terracotta,
+            color: primaryBlue,
             size: 23,
           ),
           const SizedBox(width: 8),
@@ -541,7 +541,7 @@ class _SchedulePageState extends State<SchedulePage> {
         children: [
           const Row(
             children: [
-              Icon(Icons.calendar_month_outlined, color: terracotta, size: 27),
+              Icon(Icons.calendar_month_outlined, color: primaryBlue, size: 27),
               SizedBox(width: 9),
               Expanded(
                 child: FittedBox(
@@ -586,7 +586,7 @@ class _SchedulePageState extends State<SchedulePage> {
     ),
   );
   Widget _nav(bool month, IconData icon, String label) => Material(
-    color: _monthView == month ? const Color(0xffdacbb9) : Colors.transparent,
+    color: _monthView == month ? selectionColor : Colors.transparent,
     borderRadius: BorderRadius.circular(7),
     child: InkWell(
       borderRadius: BorderRadius.circular(7),
@@ -598,7 +598,7 @@ class _SchedulePageState extends State<SchedulePage> {
             Icon(
               icon,
               size: 18,
-              color: _monthView == month ? terracotta : muted,
+              color: _monthView == month ? primaryBlue : muted,
             ),
             const SizedBox(width: 10),
             Expanded(
@@ -714,7 +714,7 @@ class _SchedulePageState extends State<SchedulePage> {
                       height: 28,
                       margin: const EdgeInsets.all(1),
                       decoration: BoxDecoration(
-                        color: selected ? terracotta : Colors.transparent,
+                        color: selected ? primaryBlue : Colors.transparent,
                         borderRadius: BorderRadius.circular(5),
                       ),
                       child: Column(
@@ -737,7 +737,7 @@ class _SchedulePageState extends State<SchedulePage> {
                               width: 3,
                               height: 3,
                               decoration: BoxDecoration(
-                                color: selected ? panel : terracotta,
+                                color: selected ? panel : primaryBlue,
                                 shape: BoxShape.circle,
                               ),
                             ),
@@ -964,7 +964,7 @@ class _SchedulePageState extends State<SchedulePage> {
           ),
         const SizedBox(height: 23),
         Surface(
-          color: const Color(0xffe8e8dc),
+          color: highlightColor,
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
           child: Row(
             children: [
@@ -976,8 +976,8 @@ class _SchedulePageState extends State<SchedulePage> {
                   children: [
                     CircularProgressIndicator(
                       value: tasks.isEmpty ? 0 : done / tasks.length,
-                      color: sage,
-                      backgroundColor: const Color(0xffcdd2bf),
+                      color: successGreen,
+                      backgroundColor: uiBackground,
                       strokeWidth: 4,
                     ),
                     Text(
@@ -1132,7 +1132,7 @@ class _SchedulePageState extends State<SchedulePage> {
             color: color.withValues(alpha: done || skipped ? .4 : 1),
             width: 3,
           ),
-          bottom: const BorderSide(color: Color(0xffece6dc)),
+          bottom: const BorderSide(color: line),
         ),
       ),
       padding: const EdgeInsets.fromLTRB(8, 12, 0, 12),
@@ -1151,6 +1151,7 @@ class _SchedulePageState extends State<SchedulePage> {
                   borderRadius: BorderRadius.circular(4),
                 ),
                 activeColor: color,
+                checkColor: color.computeLuminance() > .2 ? ink : Colors.white,
               ),
             )
           else
@@ -1190,7 +1191,7 @@ class _SchedulePageState extends State<SchedulePage> {
                         ),
                         Text(
                           '· ${categories[p.category]}',
-                          style: TextStyle(fontSize: 10, color: color),
+                          style: const TextStyle(fontSize: 10, color: ink),
                         ),
                         if (p.recurring)
                           const Icon(Icons.repeat, size: 11, color: muted),
@@ -1205,17 +1206,14 @@ class _SchedulePageState extends State<SchedulePage> {
                       const SizedBox(height: 4),
                       const Text(
                         'Moved earlier to avoid a clash',
-                        style: TextStyle(fontSize: 10, color: sage),
+                        style: TextStyle(fontSize: 10, color: successGreen),
                       ),
                     ],
                     if (collisions.isNotEmpty) ...[
                       const SizedBox(height: 5),
                       Text(
                         'Overlaps: ${collisions.map((p) => p.title).join(', ')}',
-                        style: const TextStyle(
-                          fontSize: 10,
-                          color: Color(0xffa65d37),
-                        ),
+                        style: const TextStyle(fontSize: 10, color: warningInk),
                       ),
                     ],
                   ],
@@ -1354,7 +1352,7 @@ class _SchedulePageState extends State<SchedulePage> {
                                     color:
                                         candidates.isEmpty
                                             ? Colors.transparent
-                                            : terracotta.withValues(alpha: .2),
+                                            : primaryBlue.withValues(alpha: .2),
                                     child:
                                         candidates.isEmpty
                                             ? null
@@ -1362,7 +1360,7 @@ class _SchedulePageState extends State<SchedulePage> {
                                               timeText(startHour * 60 + n * 15),
                                               style: const TextStyle(
                                                 fontSize: 9,
-                                                color: terracotta,
+                                                color: primaryBlue,
                                               ),
                                             ),
                                   ),
@@ -1416,7 +1414,7 @@ class _SchedulePageState extends State<SchedulePage> {
                                           '${timeText(p.start)} – ${timeText(p.end)}',
                                           style: TextStyle(
                                             fontSize: 9,
-                                            color: color,
+                                            color: muted,
                                             height: 1.2,
                                           ),
                                         ),
@@ -1591,9 +1589,9 @@ class _SchedulePageState extends State<SchedulePage> {
                             decoration: BoxDecoration(
                               color:
                                   key == _key
-                                      ? const Color(0xfff0e2d2)
+                                      ? highlightColor
                                       : date.month != _month.month
-                                      ? const Color(0xfff0ede6)
+                                      ? paper
                                       : panel,
                               border: Border(
                                 top: const BorderSide(color: line),
@@ -1620,7 +1618,7 @@ class _SchedulePageState extends State<SchedulePage> {
                                         decoration: BoxDecoration(
                                           color:
                                               isToday
-                                                  ? terracotta
+                                                  ? primaryBlue
                                                   : Colors.transparent,
                                           shape: BoxShape.circle,
                                         ),
@@ -1685,9 +1683,7 @@ class _SchedulePageState extends State<SchedulePage> {
                                                     style: TextStyle(
                                                       fontSize:
                                                           compact ? 8 : 10,
-                                                      color:
-                                                          categoryColors[p
-                                                              .category],
+                                                      color: ink,
                                                     ),
                                                   ),
                                                 ),
@@ -1881,7 +1877,7 @@ class _MoveDialogState extends State<MoveDialog> {
             const SizedBox(height: 10),
             Text(
               error!,
-              style: const TextStyle(fontSize: 12, color: Colors.red),
+              style: const TextStyle(fontSize: 12, color: errorColor),
             ),
           ],
         ],

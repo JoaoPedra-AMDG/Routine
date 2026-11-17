@@ -1,32 +1,46 @@
 import 'package:flutter/material.dart';
 
-const paper = Color(0xfff6f3ec),
-    panel = Color(0xfffdfbf6),
-    sidebar = Color(0xffeae3d8),
-    line = Color(0xffded7cb),
-    ink = Color(0xff51483f),
-    muted = Color(0xff897e71),
-    terracotta = Color(0xffa35b3d),
-    sage = Color(0xff65806a);
+// monday.com Vibe light-theme tokens:
+// https://github.com/mondaycom/vibe/blob/master/packages/style/src/themes/light-theme.scss
+const paper = Color(0xfff6f7fb),
+    panel = Color(0xffffffff),
+    sidebar = Color(0xffeceff8),
+    line = Color(0xffd0d4e4),
+    ink = Color(0xff323338),
+    muted = Color(0xff676879),
+    primaryBlue = Color(0xff0073ea),
+    successGreen = Color(0xff00854d),
+    selectionColor = Color(0xffcce5ff),
+    highlightColor = Color(0xfff0f7ff),
+    uiBackground = Color(0xffe7e9ef),
+    warningInk = Color(0xff8f6500),
+    errorColor = Color(0xffd83a52);
 const categoryColors = <String, Color>{
-  'catholic': Color(0xff7851a2),
-  'uni': Color(0xff2f699d),
-  'family': Color(0xffb2594d),
-  'friends': Color(0xff87630c),
-  'exercise': Color(0xff3c7d56),
-  'home': Color(0xff8c7866),
-  'work': Color(0xff5d7386),
-  'personal': Color(0xff7b7b76),
+  'catholic': Color(0xff9d50dd),
+  'uni': Color(0xff579bfc),
+  'family': Color(0xfffdab3d),
+  'friends': Color(0xffffcb00),
+  'exercise': Color(0xff00c875),
+  'home': Color(0xffc4c4c4),
+  'work': Color(0xff0073ea),
+  'personal': Color(0xffff6d3b),
 };
 ThemeData appTheme() => ThemeData(
   useMaterial3: true,
   scaffoldBackgroundColor: paper,
-  colorScheme: ColorScheme.fromSeed(seedColor: terracotta).copyWith(
-    primary: terracotta,
+  colorScheme: ColorScheme.fromSeed(seedColor: primaryBlue).copyWith(
+    primary: primaryBlue,
+    onPrimary: Colors.white,
+    primaryContainer: selectionColor,
+    onPrimaryContainer: ink,
     surface: panel,
+    surfaceTint: Colors.transparent,
     onSurface: ink,
     outline: line,
-    secondary: sage,
+    secondary: successGreen,
+    secondaryContainer: selectionColor,
+    onSecondaryContainer: ink,
+    error: errorColor,
   ),
   textTheme: const TextTheme(
     bodyMedium: TextStyle(color: ink, fontSize: 14),

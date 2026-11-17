@@ -497,7 +497,7 @@ class _PlanEditorState extends State<PlanEditor> {
                 const SizedBox(height: 12),
                 Text(
                   _error!,
-                  style: const TextStyle(color: Colors.red, fontSize: 12),
+                  style: const TextStyle(color: errorColor, fontSize: 12),
                 ),
               ],
               const SizedBox(height: 22),
@@ -511,7 +511,7 @@ class _PlanEditorState extends State<PlanEditor> {
                       onPressed: _remove,
                       child: const Text(
                         'Remove',
-                        style: TextStyle(color: Color(0xffa04936)),
+                        style: TextStyle(color: errorColor),
                       ),
                     ),
                   TextButton(
