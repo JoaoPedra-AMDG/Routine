@@ -214,11 +214,17 @@ class _SchedulePageState extends State<SchedulePage> {
   Future<void> _datePicker() async {
     final d = await showDatePicker(
       context: context,
-      initialDate: _day,
+      initialDate: _monthView ? _month : _day,
       firstDate: DateTime(2020),
       lastDate: DateTime(2100),
     );
-    if (d != null && mounted) _selectDay(d);
+    if (d != null && mounted) {
+      setState(() {
+        _day = DateTime(d.year, d.month, d.day, 12);
+        _month = DateTime(d.year, d.month, 1, 12);
+        _miniMonth = _month;
+      });
+    }
   }
 
   Future<void> _backup() async {
@@ -434,84 +440,93 @@ class _SchedulePageState extends State<SchedulePage> {
   Widget _heading() => LayoutBuilder(
     builder: (context, c) {
       final compact = c.maxWidth < 730;
-      final title = Column(
+      return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            _monthView ? 'Month' : '${weekNames[_day.weekday - 1]} · SAST',
+            _monthView ? 'SAST' : '${weekNames[_day.weekday - 1]} · SAST',
             style: const TextStyle(fontSize: 12, color: muted),
           ),
           const SizedBox(height: 7),
-          Text(
-            _monthView
-                ? '${monthNames[_month.month - 1]} ${_month.year}'
-                : dateLabel(_day),
-            style: TextStyle(
-              fontSize: compact ? 31 : 38,
-              fontWeight: FontWeight.w500,
-              letterSpacing: -1.1,
-            ),
-          ),
-        ],
-      );
-      final controls = Wrap(
-        spacing: 14,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        children: [
           Row(
-            mainAxisSize: MainAxisSize.min,
             children: [
               IconButton(
                 tooltip: _monthView ? 'Previous month' : 'Previous day',
+                constraints: const BoxConstraints.tightFor(
+                  width: 32,
+                  height: 44,
+                ),
+                padding: EdgeInsets.zero,
                 onPressed: () => _shift(-1),
                 icon: const Icon(Icons.chevron_left, size: 20),
               ),
-              TextButton(
-                onPressed:
-                    () => setState(() {
-                      _day = southAfricaToday();
-                      _month = DateTime(_day.year, _day.month, 1, 12);
-                      _miniMonth = _month;
-                    }),
-                child: const Text('Today'),
+              Flexible(
+                child: Tooltip(
+                  message: 'Choose date',
+                  child: InkWell(
+                    key: const ValueKey('date-picker-button'),
+                    onTap: _datePicker,
+                    borderRadius: BorderRadius.circular(7),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 4,
+                        vertical: 6,
+                      ),
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          _monthView
+                              ? '${monthNames[_month.month - 1]} ${_month.year}'
+                              : dateLabel(_day),
+                          style: TextStyle(
+                            fontSize: compact ? 28 : 38,
+                            fontWeight: FontWeight.w500,
+                            letterSpacing: -1.1,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
               ),
               IconButton(
                 tooltip: _monthView ? 'Next month' : 'Next day',
+                constraints: const BoxConstraints.tightFor(
+                  width: 32,
+                  height: 44,
+                ),
+                padding: EdgeInsets.zero,
                 onPressed: () => _shift(1),
                 icon: const Icon(Icons.chevron_right, size: 20),
               ),
-              if (!_monthView)
-                IconButton(
-                  tooltip: 'Choose date',
-                  onPressed: _datePicker,
-                  icon: const Icon(Icons.calendar_today_outlined, size: 18),
+              const SizedBox(width: 12),
+              SegmentedButton<bool>(
+                showSelectedIcon: false,
+                style: const ButtonStyle(
+                  visualDensity: VisualDensity.compact,
+                  textStyle: WidgetStatePropertyAll(TextStyle(fontSize: 12)),
+                  padding: WidgetStatePropertyAll(
+                    EdgeInsets.symmetric(horizontal: 12),
+                  ),
                 ),
+                segments: const [
+                  ButtonSegment(value: false, label: Text('Day')),
+                  ButtonSegment(value: true, label: Text('Month')),
+                ],
+                selected: {_monthView},
+                onSelectionChanged:
+                    (v) => setState(() {
+                      _monthView = v.first;
+                      if (_monthView) {
+                        _month = DateTime(_day.year, _day.month, 1, 12);
+                      }
+                    }),
+              ),
             ],
-          ),
-          SegmentedButton<bool>(
-            showSelectedIcon: false,
-            style: const ButtonStyle(visualDensity: VisualDensity.compact),
-            segments: const [
-              ButtonSegment(value: false, label: Text('Day')),
-              ButtonSegment(value: true, label: Text('Month')),
-            ],
-            selected: {_monthView},
-            onSelectionChanged:
-                (v) => setState(() {
-                  _monthView = v.first;
-                  if (_monthView) {
-                    _month = DateTime(_day.year, _day.month, 1, 12);
-                  }
-                }),
           ),
         ],
       );
-      return compact
-          ? Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [title, const SizedBox(height: 16), controls],
-          )
-          : Row(children: [Expanded(child: title), controls]);
     },
   );
   Widget _sidebar() => Container(
@@ -825,65 +840,6 @@ class _SchedulePageState extends State<SchedulePage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Surface(
-          color: const Color(0xffe8e8dc),
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-          child: Row(
-            children: [
-              SizedBox(
-                width: 42,
-                height: 42,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    CircularProgressIndicator(
-                      value: tasks.isEmpty ? 0 : done / tasks.length,
-                      color: sage,
-                      backgroundColor: const Color(0xffcdd2bf),
-                      strokeWidth: 4,
-                    ),
-                    Text(
-                      '$done/${tasks.length}',
-                      style: const TextStyle(fontSize: 12),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 19),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '$done of ${tasks.length} complete',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${tasks.length - done - skipped} remaining${skipped == 0 ? '' : ' · $skipped skipped'}',
-                      style: const TextStyle(fontSize: 11, color: muted),
-                    ),
-                  ],
-                ),
-              ),
-              Column(
-                children: [
-                  Text(
-                    '${items.where((p) => !p.isTask).length}',
-                    style: const TextStyle(fontSize: 25),
-                  ),
-                  const Text(
-                    'Events',
-                    style: TextStyle(fontSize: 10, color: muted),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
         if (allDay.isNotEmpty) ...[
           const SizedBox(height: 22),
           const Text(
@@ -971,7 +927,7 @@ class _SchedulePageState extends State<SchedulePage> {
                     .toList(),
           ),
         ],
-        const SizedBox(height: 23),
+        if (allDay.isNotEmpty) const SizedBox(height: 23),
         if (!_wide) ...[
           SegmentedButton<bool>(
             segments: const [
@@ -1002,6 +958,66 @@ class _SchedulePageState extends State<SchedulePage> {
               Expanded(flex: 5, child: timeline),
             ],
           ),
+        const SizedBox(height: 23),
+        Surface(
+          color: const Color(0xffe8e8dc),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+          child: Row(
+            children: [
+              SizedBox(
+                width: 42,
+                height: 42,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    CircularProgressIndicator(
+                      value: tasks.isEmpty ? 0 : done / tasks.length,
+                      color: sage,
+                      backgroundColor: const Color(0xffcdd2bf),
+                      strokeWidth: 4,
+                    ),
+                    Text(
+                      '$done/${tasks.length}',
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 19),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '$done of ${tasks.length} complete',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${tasks.length - done - skipped} remaining${skipped == 0 ? '' : ' · $skipped skipped'}',
+                      style: const TextStyle(fontSize: 11, color: muted),
+                    ),
+                  ],
+                ),
+              ),
+              Column(
+                children: [
+                  Text(
+                    '${items.where((p) => !p.isTask).length}',
+                    style: const TextStyle(fontSize: 25),
+                  ),
+                  const Text(
+                    'Events',
+                    style: TextStyle(fontSize: 10, color: muted),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }
@@ -1437,8 +1453,34 @@ class _SchedulePageState extends State<SchedulePage> {
   Widget _monthly() {
     final dates = _calendarDates(_month);
     return Column(
+      key: const ValueKey('month-view'),
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        Align(
+          alignment: Alignment.centerRight,
+          child: MergeSemantics(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('Recurring events', style: TextStyle(fontSize: 12)),
+                const SizedBox(width: 8),
+                Switch(
+                  value: _schedule.showRecurringEventsInMonth,
+                  onChanged: (value) {
+                    setState(
+                      () => _schedule.showRecurringEventsInMonth = value,
+                    );
+                    _save();
+                  },
+                  thumbIcon: const WidgetStatePropertyAll(
+                    Icon(Icons.repeat, size: 16),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
         Surface(
           child: LayoutBuilder(
             builder: (context, c) {
@@ -1478,7 +1520,11 @@ class _SchedulePageState extends State<SchedulePage> {
                                 _schedule
                                     .on(key)
                                     .where(
-                                      (p) => !p.isTask || p.repeat == 'weekly',
+                                      (p) =>
+                                          (!p.isTask || p.repeat == 'weekly') &&
+                                          (_schedule
+                                                  .showRecurringEventsInMonth ||
+                                              !p.recurring),
                                     )
                                     .toList(),
                             isToday = key == dateKey(southAfricaToday());
@@ -1630,7 +1676,13 @@ class _SchedulePageState extends State<SchedulePage> {
     final count = DateTime(_month.year, _month.month + 1, 0).day;
     for (var n = 0; n < count; n++) {
       final date = _month.add(Duration(days: n));
-      for (final p in _schedule.on(dateKey(date)).where((p) => !p.isTask)) {
+      for (final p in _schedule
+          .on(dateKey(date))
+          .where(
+            (p) =>
+                !p.isTask &&
+                (_schedule.showRecurringEventsInMonth || !p.recurring),
+          )) {
         if (!seen.add(p.id)) continue;
         widgets.add(
           InkWell(

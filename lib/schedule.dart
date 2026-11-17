@@ -196,6 +196,7 @@ class Schedule {
     : overrides = overrides ?? {};
   final List<Plan> items;
   final Map<String, Map<String, dynamic>> overrides;
+  bool showRecurringEventsInMonth = true;
   void changeDay(String date, String id, Map<String, dynamic> patch) {
     final key = '$date|$id';
     overrides[key] = {...?overrides[key], ...patch};
@@ -266,6 +267,7 @@ class Schedule {
     'version': 1,
     'items': items.map((p) => p.toJson()).toList(),
     'overrides': overrides,
+    'settings': {'showRecurringEventsInMonth': showRecurringEventsInMonth},
   };
   String encode() => const JsonEncoder.withIndent('  ').convert(toJson());
   factory Schedule.decode(String text) {
@@ -309,7 +311,16 @@ class Schedule {
           items.where((p) => p.id == entry.key.substring(11)).firstOrNull;
       if (plan != null) plan.withChanges(entry.value);
     }
-    return Schedule(items, patches);
+    final settings = j['settings'];
+    if (settings != null &&
+        (settings is! Map ||
+            (settings['showRecurringEventsInMonth'] != null &&
+                settings['showRecurringEventsInMonth'] is! bool))) {
+      throw const FormatException('Invalid settings');
+    }
+    return Schedule(items, patches)
+      ..showRecurringEventsInMonth =
+          (settings?['showRecurringEventsInMonth'] as bool?) ?? true;
   }
   factory Schedule.seed() {
     Plan routine(

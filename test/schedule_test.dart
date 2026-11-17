@@ -1,7 +1,24 @@
+import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:daybook/schedule.dart';
 
 void main() {
+  test(
+    'month visibility preference survives backups and defaults on for older data',
+    () {
+      final schedule = Schedule.seed()..showRecurringEventsInMonth = false;
+      expect(
+        Schedule.decode(schedule.encode()).showRecurringEventsInMonth,
+        false,
+      );
+      final old = schedule.toJson()..remove('settings');
+      expect(Schedule.decode(jsonEncode(old)).showRecurringEventsInMonth, true);
+      final invalid =
+          schedule.toJson()
+            ..['settings'] = {'showRecurringEventsInMonth': 'false'};
+      expect(() => Schedule.decode(jsonEncode(invalid)), throwsFormatException);
+    },
+  );
   test('completion and moves affect only the selected day', () {
     final s = Schedule.seed();
     expect(s.on('2026-11-17').where((p) => p.isTask).length, 10);
