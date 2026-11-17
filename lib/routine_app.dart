@@ -12,10 +12,12 @@ class RoutineApp extends StatelessWidget {
     required this.schedule,
     this.storageError,
     this.writer,
+    this.initialDate,
   });
   final Schedule schedule;
   final String? storageError;
   final Future<void> Function(String)? writer;
+  final DateTime? initialDate;
   @override
   Widget build(BuildContext context) => MaterialApp(
     title: 'Routine',
@@ -25,6 +27,7 @@ class RoutineApp extends StatelessWidget {
       initial: schedule,
       storageError: storageError,
       writer: writer ?? saveSchedule,
+      initialDate: initialDate,
     ),
   );
 }
@@ -35,10 +38,12 @@ class SchedulePage extends StatefulWidget {
     required this.initial,
     required this.writer,
     this.storageError,
+    this.initialDate,
   });
   final Schedule initial;
   final Future<void> Function(String) writer;
   final String? storageError;
+  final DateTime? initialDate;
   @override
   State<SchedulePage> createState() => _SchedulePageState();
 }
@@ -54,7 +59,7 @@ class _SchedulePageState extends State<SchedulePage> {
   void initState() {
     super.initState();
     _schedule = widget.initial;
-    _day = southAfricaToday();
+    _day = widget.initialDate ?? southAfricaToday();
     _month = DateTime(_day.year, _day.month, 1, 12);
     _miniMonth = _month;
     _storageError = widget.storageError;

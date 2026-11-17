@@ -51,8 +51,8 @@ class _PlanEditorState extends State<PlanEditor> {
     _weekdays = (p?.weekdays ?? [widget.day.weekday % 7]).toSet();
     _start = p?.start ?? 540;
     _end = p?.end ?? 600;
-    _allDay = p?.allDay ?? false;
     _tbc = p?.timeTbc ?? false;
+    _allDay = (p?.allDay ?? false) && !_tbc;
     _until = p?.until == null || p!.until!.isEmpty ? null : parseDate(p.until!);
   }
 
@@ -407,7 +407,11 @@ class _PlanEditorState extends State<PlanEditor> {
                   style: TextStyle(fontSize: 13),
                 ),
                 value: _allDay,
-                onChanged: (v) => setState(() => _allDay = v!),
+                onChanged:
+                    (v) => setState(() {
+                      _allDay = v!;
+                      if (_allDay) _tbc = false;
+                    }),
                 contentPadding: EdgeInsets.zero,
                 controlAffinity: ListTileControlAffinity.leading,
                 dense: true,
@@ -419,7 +423,11 @@ class _PlanEditorState extends State<PlanEditor> {
                     style: TextStyle(fontSize: 13),
                   ),
                   value: _tbc,
-                  onChanged: (v) => setState(() => _tbc = v!),
+                  onChanged:
+                      (v) => setState(() {
+                        _tbc = v!;
+                        if (_tbc) _allDay = false;
+                      }),
                   contentPadding: EdgeInsets.zero,
                   controlAffinity: ListTileControlAffinity.leading,
                   dense: true,
