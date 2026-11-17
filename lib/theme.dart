@@ -9,13 +9,14 @@ const paper = Color(0xfff6f3ec),
     terracotta = Color(0xffa35b3d),
     sage = Color(0xff65806a);
 const categoryColors = <String, Color>{
-  'prayer': Color(0xffa46c4d),
-  'home': Color(0xffa28a48),
-  'learning': Color(0xff6a8a78),
-  'wellbeing': Color(0xff638271),
-  'family': Color(0xffbd7668),
-  'work': Color(0xff687e94),
-  'personal': Color(0xff96816b),
+  'catholic': Color(0xff7851a2),
+  'uni': Color(0xff2f699d),
+  'family': Color(0xffb2594d),
+  'friends': Color(0xff87630c),
+  'exercise': Color(0xff3c7d56),
+  'home': Color(0xff8c7866),
+  'work': Color(0xff5d7386),
+  'personal': Color(0xff7b7b76),
 };
 ThemeData appTheme() => ThemeData(
   useMaterial3: true,

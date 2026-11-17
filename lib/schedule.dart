@@ -1,13 +1,20 @@
 import 'dart:convert';
 
 const categories = <String, String>{
-  'prayer': 'Prayer',
-  'home': 'Home',
-  'learning': 'Learning',
-  'wellbeing': 'Exercise',
+  'catholic': 'Catholic',
+  'uni': 'Uni',
   'family': 'Family',
+  'friends': 'Friends',
+  'exercise': 'Exercise',
+  'home': 'Home',
   'work': 'Work',
   'personal': 'Personal',
+};
+String normalizeActivityType(String value, {String? planId}) => switch (value) {
+  'prayer' => 'catholic',
+  'wellbeing' => 'exercise',
+  'learning' => planId == 'gianna' ? 'family' : 'uni',
+  _ => value,
 };
 const monthNames = [
   'January',
@@ -113,7 +120,10 @@ class Plan {
       date: j['date'] as String,
       endDate: j['endDate'] as String?,
       kind: j['kind'] as String,
-      category: j['category'] as String,
+      category: normalizeActivityType(
+        j['category'] as String,
+        planId: j['id'] as String,
+      ),
       repeat: j['repeat'] as String,
       weekdays: (j['weekdays'] as List).cast<int>(),
       until: j['until'] as String?,
@@ -309,7 +319,12 @@ class Schedule {
       }
       final plan =
           items.where((p) => p.id == entry.key.substring(11)).firstOrNull;
-      if (plan != null) plan.withChanges(entry.value);
+      if (plan != null) {
+        final normalized = plan.withChanges(entry.value);
+        if (entry.value.containsKey('category')) {
+          entry.value['category'] = normalized.category;
+        }
+      }
     }
     final settings = j['settings'];
     if (settings != null &&
@@ -368,22 +383,22 @@ class Schedule {
       notes: notes,
     );
     return Schedule([
-      routine('morning', 'Morning prayers', 360, 375, 'prayer'),
-      routine('mass', 'Mass', 390, 420, 'prayer'),
+      routine('morning', 'Morning prayers', 360, 375, 'catholic'),
+      routine('mass', 'Mass', 390, 420, 'catholic'),
       routine('house', 'Organize the house', 540, 600, 'home'),
       routine('basement', 'Organize the basement', 600, 660, 'home'),
-      routine('gianna', 'Teach Gianna', 660, 720, 'learning'),
-      routine('angelus', 'Angelus', 720, 725, 'prayer'),
+      routine('gianna', 'Teach Gianna', 660, 720, 'family'),
+      routine('angelus', 'Angelus', 720, 725, 'catholic'),
       routine('development', 'App development', 840, 900, 'work'),
-      routine('jog', 'Jog', 1020, 1050, 'wellbeing', jog: true),
-      routine('rosary', 'Rosary', 1110, 1140, 'prayer'),
-      routine('evening', 'Evening prayers', 1230, 1245, 'prayer'),
+      routine('jog', 'Jog', 1020, 1050, 'exercise', jog: true),
+      routine('rosary', 'Rosary', 1110, 1140, 'catholic'),
+      routine('evening', 'Evening prayers', 1230, 1245, 'catholic'),
       routine(
         'adoration-wed',
         'Adoration',
         1050,
         1110,
-        'prayer',
+        'catholic',
         repeat: 'weekly',
         days: [3],
       ),
@@ -392,7 +407,7 @@ class Schedule {
         'Spiritual direction',
         870,
         930,
-        'prayer',
+        'catholic',
         repeat: 'weekly',
         days: [5],
       ),
@@ -401,7 +416,7 @@ class Schedule {
         'Adoration',
         960,
         1020,
-        'prayer',
+        'catholic',
         repeat: 'weekly',
         days: [5],
       ),
@@ -460,7 +475,7 @@ class Schedule {
         'confirmation',
         'Confirmation (evening)',
         '2026-12-04',
-        category: 'prayer',
+        category: 'catholic',
         tbc: true,
         notes: 'Evening; exact time to confirm.',
       ),

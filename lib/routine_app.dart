@@ -775,9 +775,13 @@ class _SchedulePageState extends State<SchedulePage> {
                     width: 37,
                     padding: const EdgeInsets.symmetric(vertical: 5),
                     decoration: BoxDecoration(
-                      border: Border.all(color: line),
+                      border: Border.all(
+                        color: categoryColors[p.category]!.withValues(
+                          alpha: .4,
+                        ),
+                      ),
                       borderRadius: BorderRadius.circular(6),
-                      color: paper,
+                      color: categoryColors[p.category]!.withValues(alpha: .1),
                     ),
                     child: Column(
                       children: [
@@ -1121,10 +1125,17 @@ class _SchedulePageState extends State<SchedulePage> {
     return Container(
       key: ValueKey('${_key}_${p.id}'),
       margin: const EdgeInsets.symmetric(horizontal: 18),
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: Color(0xffece6dc))),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: done || skipped ? .025 : .055),
+        border: Border(
+          left: BorderSide(
+            color: color.withValues(alpha: done || skipped ? .4 : 1),
+            width: 3,
+          ),
+          bottom: const BorderSide(color: Color(0xffece6dc)),
+        ),
       ),
-      padding: const EdgeInsets.symmetric(vertical: 12),
+      padding: const EdgeInsets.fromLTRB(8, 12, 0, 12),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
@@ -1139,7 +1150,7 @@ class _SchedulePageState extends State<SchedulePage> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(4),
                 ),
-                activeColor: sage,
+                activeColor: color,
               ),
             )
           else
@@ -1372,7 +1383,7 @@ class _SchedulePageState extends State<SchedulePage> {
                                 ),
                                 decoration: BoxDecoration(
                                   color: color.withValues(
-                                    alpha: p.status == 'pending' ? 0.14 : 0.07,
+                                    alpha: p.status == 'pending' ? 0.18 : 0.07,
                                   ),
                                   border: Border(
                                     left: BorderSide(color: color, width: 2),
@@ -1452,33 +1463,79 @@ class _SchedulePageState extends State<SchedulePage> {
 
   Widget _monthly() {
     final dates = _calendarDates(_month);
+    final visibleTypes = {
+      for (final date in dates)
+        for (final plan in _schedule.on(dateKey(date)))
+          if ((!plan.isTask || plan.repeat == 'weekly') &&
+              (_schedule.showRecurringEventsInMonth || !plan.recurring))
+            plan.category,
+    };
     return Column(
       key: const ValueKey('month-view'),
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Align(
-          alignment: Alignment.centerRight,
-          child: MergeSemantics(
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text('Recurring events', style: TextStyle(fontSize: 12)),
-                const SizedBox(width: 8),
-                Switch(
-                  value: _schedule.showRecurringEventsInMonth,
-                  onChanged: (value) {
-                    setState(
-                      () => _schedule.showRecurringEventsInMonth = value,
-                    );
-                    _save();
-                  },
-                  thumbIcon: const WidgetStatePropertyAll(
-                    Icon(Icons.repeat, size: 16),
-                  ),
-                ),
-              ],
+        Row(
+          children: [
+            Expanded(
+              child: Wrap(
+                spacing: 12,
+                runSpacing: 8,
+                children: [
+                  for (final entry in categories.entries)
+                    if (visibleTypes.contains(entry.key))
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 7,
+                            height: 7,
+                            decoration: BoxDecoration(
+                              color: categoryColors[entry.key],
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 5),
+                          Flexible(
+                            child: Text(
+                              entry.value,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 10,
+                                color: muted,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                ],
+              ),
             ),
-          ),
+            const SizedBox(width: 12),
+            MergeSemantics(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    'Recurring events',
+                    style: TextStyle(fontSize: 12),
+                  ),
+                  const SizedBox(width: 8),
+                  Switch(
+                    value: _schedule.showRecurringEventsInMonth,
+                    onChanged: (value) {
+                      setState(
+                        () => _schedule.showRecurringEventsInMonth = value,
+                      );
+                      _save();
+                    },
+                    thumbIcon: const WidgetStatePropertyAll(
+                      Icon(Icons.repeat, size: 16),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 10),
         Surface(
@@ -1606,7 +1663,7 @@ class _SchedulePageState extends State<SchedulePage> {
                                                   decoration: BoxDecoration(
                                                     color: categoryColors[p
                                                             .category]!
-                                                        .withValues(alpha: .12),
+                                                        .withValues(alpha: .16),
                                                     border: Border(
                                                       left: BorderSide(
                                                         color:

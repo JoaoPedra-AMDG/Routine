@@ -6,6 +6,61 @@ import 'package:daybook/plan_editor.dart';
 
 void main() {
   testWidgets(
+    'activity type picker offers the requested types and saves Friends',
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      PlanEdit? result;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Builder(
+            builder:
+                (context) => Scaffold(
+                  body: TextButton(
+                    onPressed: () async {
+                      result = await showDialog<PlanEdit>(
+                        context: context,
+                        builder:
+                            (_) => PlanEditor(
+                              day: parseDate('2026-11-17'),
+                              event: true,
+                            ),
+                      );
+                    },
+                    child: const Text('New event'),
+                  ),
+                ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('New event'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextFormField).first, 'Meet friends');
+      await tester.tap(find.byType(DropdownButtonFormField<String>).first);
+      await tester.pumpAndSettle();
+      for (final label in [
+        'Catholic',
+        'Uni',
+        'Family',
+        'Friends',
+        'Exercise',
+      ]) {
+        expect(find.text(label), findsWidgets);
+      }
+      await tester.tap(find.text('Friends').last);
+      await tester.pumpAndSettle();
+      final save = find.widgetWithText(FilledButton, 'Save');
+      await tester.ensureVisible(save);
+      await tester.tap(save);
+      await tester.pumpAndSettle();
+      expect(result?.plan.category, 'friends');
+      expect(result?.plan.title, 'Meet friends');
+      expect(tester.takeException(), isNull);
+    },
+  );
+  testWidgets(
     'month filter persists and keeps one-off events and daily routines',
     (tester) async {
       tester.view.physicalSize = const Size(1280, 1000);

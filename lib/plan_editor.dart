@@ -111,8 +111,9 @@ class _PlanEditorState extends State<PlanEditor> {
     String label,
     String value,
     Map<String, String> options,
-    ValueChanged<String>? onChanged,
-  ) => DropdownButtonFormField<String>(
+    ValueChanged<String>? onChanged, {
+    bool showColours = false,
+  }) => DropdownButtonFormField<String>(
     value: value,
     decoration: InputDecoration(labelText: label),
     isExpanded: true,
@@ -121,7 +122,23 @@ class _PlanEditorState extends State<PlanEditor> {
             .map(
               (e) => DropdownMenuItem(
                 value: e.key,
-                child: Text(e.value, overflow: TextOverflow.ellipsis),
+                child:
+                    showColours
+                        ? Row(
+                          children: [
+                            Container(
+                              width: 10,
+                              height: 10,
+                              decoration: BoxDecoration(
+                                color: categoryColors[e.key],
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Text(e.value, overflow: TextOverflow.ellipsis),
+                          ],
+                        )
+                        : Text(e.value, overflow: TextOverflow.ellipsis),
               ),
             )
             .toList(),
@@ -326,10 +343,11 @@ class _PlanEditorState extends State<PlanEditor> {
               ),
               const SizedBox(height: 18),
               _select(
-                'Category',
+                'Activity type',
                 _category,
                 categories,
                 (v) => setState(() => _category = v),
+                showColours: true,
               ),
               const SizedBox(height: 18),
               _select(

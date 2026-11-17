@@ -4,6 +4,51 @@ import 'package:daybook/schedule.dart';
 
 void main() {
   test(
+    'legacy activity types migrate without losing day changes or settings',
+    () {
+      final json = Schedule.seed().toJson();
+      for (final item in json['items'] as List) {
+        if (item['category'] == 'catholic') item['category'] = 'prayer';
+        if (item['category'] == 'exercise') item['category'] = 'wellbeing';
+        if (item['id'] == 'gianna') item['category'] = 'learning';
+      }
+      (json['items'] as List).add({
+        ...const Plan(
+          id: 'lecture',
+          title: 'Lecture',
+          date: '2026-11-17',
+          category: 'uni',
+        ).toJson(),
+        'category': 'learning',
+      });
+      json['settings'] = {'showRecurringEventsInMonth': false};
+      json['overrides'] = {
+        '2026-11-17|mass': {
+          'category': 'prayer',
+          'status': 'done',
+          'start': '08:00',
+          'end': '08:30',
+        },
+        '2026-11-17|jog': {'category': 'wellbeing', 'status': 'skipped'},
+        '2026-11-17|gianna': {'category': 'learning', 'notes': 'Lesson notes'},
+      };
+      final restored = Schedule.decode(jsonEncode(json));
+      final day = restored.on('2026-11-17');
+      final mass = day.firstWhere((p) => p.id == 'mass');
+      expect(mass.category, 'catholic');
+      expect(mass.status, 'done');
+      expect(mass.start, 480);
+      expect(day.firstWhere((p) => p.id == 'jog').category, 'exercise');
+      expect(day.firstWhere((p) => p.id == 'jog').status, 'skipped');
+      expect(day.firstWhere((p) => p.id == 'gianna').category, 'family');
+      expect(day.firstWhere((p) => p.id == 'gianna').notes, 'Lesson notes');
+      expect(day.firstWhere((p) => p.id == 'lecture').category, 'uni');
+      expect(restored.overrides['2026-11-17|mass']!['category'], 'catholic');
+      expect(restored.showRecurringEventsInMonth, false);
+      expect(Schedule.decode(restored.encode()).items.length, 21);
+    },
+  );
+  test(
     'month visibility preference survives backups and defaults on for older data',
     () {
       final schedule = Schedule.seed()..showRecurringEventsInMonth = false;
