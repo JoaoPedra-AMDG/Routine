@@ -1,0 +1,12 @@
+.sites-local/
+node_modules/
+*.tar.gz
+*.tgz
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.idea/
+*.iml
+build/
+dist/
+.openai/
