@@ -206,7 +206,41 @@ class Schedule {
     : overrides = overrides ?? {};
   final List<Plan> items;
   final Map<String, Map<String, dynamic>> overrides;
+  final Set<String> appliedEventUpdates = {};
   bool showRecurringEventsInMonth = true;
+  void applyEventUpdates() {
+    const updates = [
+      Plan(
+        id: 'community-service-camp-2026',
+        title: 'Community service camp',
+        date: '2026-11-25',
+        endDate: '2026-11-29',
+        kind: 'event',
+        category: 'catholic',
+        allDay: true,
+        notes:
+            'Gingindlovu, KwaZulu-Natal.\nRefurbishing and painting a parish church.\nR800, including meals and accommodation.\nOrganisers: Brookside Hall and Westridge Study Centre.',
+      ),
+      Plan(
+        id: 'vall-friends-2026-11-19',
+        title: 'Vall with friends',
+        date: '2026-11-19',
+        endDate: '2026-11-22',
+        kind: 'event',
+        category: 'friends',
+        allDay: true,
+        notes:
+            'Planned trip with friends, Thursday–Sunday. Travel times to confirm.',
+      ),
+    ];
+    for (final plan in updates) {
+      if (appliedEventUpdates.add(plan.id) &&
+          !items.any((p) => p.id == plan.id)) {
+        items.add(plan);
+      }
+    }
+  }
+
   void changeDay(String date, String id, Map<String, dynamic> patch) {
     final key = '$date|$id';
     overrides[key] = {...?overrides[key], ...patch};
@@ -278,6 +312,7 @@ class Schedule {
     'items': items.map((p) => p.toJson()).toList(),
     'overrides': overrides,
     'settings': {'showRecurringEventsInMonth': showRecurringEventsInMonth},
+    'appliedEventUpdates': appliedEventUpdates.toList(),
   };
   String encode() => const JsonEncoder.withIndent('  ').convert(toJson());
   factory Schedule.decode(String text) {
@@ -333,9 +368,16 @@ class Schedule {
                 settings['showRecurringEventsInMonth'] is! bool))) {
       throw const FormatException('Invalid settings');
     }
+    final appliedUpdates = j['appliedEventUpdates'] ?? <String>[];
+    if (appliedUpdates is! List ||
+        appliedUpdates.any((value) => value is! String)) {
+      throw const FormatException('Invalid event updates');
+    }
     return Schedule(items, patches)
       ..showRecurringEventsInMonth =
-          (settings?['showRecurringEventsInMonth'] as bool?) ?? true;
+          (settings?['showRecurringEventsInMonth'] as bool?) ?? true
+      ..appliedEventUpdates.addAll(appliedUpdates.cast<String>())
+      ..applyEventUpdates();
   }
   factory Schedule.seed() {
     Plan routine(
@@ -479,6 +521,6 @@ class Schedule {
         tbc: true,
         notes: 'Evening; exact time to confirm.',
       ),
-    ]);
+    ])..applyEventUpdates();
   }
 }

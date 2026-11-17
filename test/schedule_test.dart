@@ -3,6 +3,98 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:daybook/schedule.dart';
 
 void main() {
+  test('new trips include both dates and stay outside the timetable', () {
+    final schedule = Schedule.seed();
+    for (final day in [
+      '2026-11-19',
+      '2026-11-20',
+      '2026-11-21',
+      '2026-11-22',
+    ]) {
+      final trip = schedule
+          .on(day)
+          .firstWhere((p) => p.id == 'vall-friends-2026-11-19');
+      expect(trip.allDay, true);
+      expect(trip.category, 'friends');
+    }
+    expect(
+      schedule.on('2026-11-18').any((p) => p.id == 'vall-friends-2026-11-19'),
+      false,
+    );
+    expect(
+      schedule.on('2026-11-23').any((p) => p.id == 'vall-friends-2026-11-19'),
+      false,
+    );
+    for (final day in [
+      '2026-11-25',
+      '2026-11-26',
+      '2026-11-27',
+      '2026-11-28',
+      '2026-11-29',
+    ]) {
+      final camp = schedule
+          .on(day)
+          .firstWhere((p) => p.id == 'community-service-camp-2026');
+      expect(camp.allDay, true);
+      expect(camp.category, 'catholic');
+      expect(camp.notes, contains('R800'));
+    }
+    expect(
+      schedule
+          .on('2026-11-30')
+          .any((p) => p.id == 'community-service-camp-2026'),
+      false,
+    );
+  });
+  test(
+    'existing installs receive events once and retain edits, removals and checkmarks',
+    () {
+      final old = Schedule.seed().toJson()..remove('appliedEventUpdates');
+      (old['items'] as List).removeWhere(
+        (p) => [
+          'community-service-camp-2026',
+          'vall-friends-2026-11-19',
+        ].contains(p['id']),
+      );
+      old['overrides'] = {
+        '2026-11-17|mass': {'status': 'done', 'start': '08:00', 'end': '08:30'},
+      };
+      final updated = Schedule.decode(jsonEncode(old));
+      expect(updated.items.length, 22);
+      expect(
+        updated.on('2026-11-17').firstWhere((p) => p.id == 'mass').status,
+        'done',
+      );
+      expect(
+        updated.on('2026-11-17').firstWhere((p) => p.id == 'mass').start,
+        480,
+      );
+      updated.applyEventUpdates();
+      expect(updated.items.length, 22);
+      final trip = updated.items.firstWhere(
+        (p) => p.id == 'vall-friends-2026-11-19',
+      );
+      updated.items[updated.items.indexOf(trip)] = trip.withChanges({
+        'notes': 'Return on Sunday afternoon',
+      });
+      updated.items.removeWhere((p) => p.id == 'community-service-camp-2026');
+      final restored = Schedule.decode(updated.encode());
+      expect(
+        restored.items.any((p) => p.id == 'community-service-camp-2026'),
+        false,
+      );
+      expect(
+        restored.items
+            .firstWhere((p) => p.id == 'vall-friends-2026-11-19')
+            .notes,
+        'Return on Sunday afternoon',
+      );
+      expect(
+        restored.items.where((p) => p.id == 'vall-friends-2026-11-19').length,
+        1,
+      );
+    },
+  );
   test(
     'legacy activity types migrate without losing day changes or settings',
     () {
@@ -45,7 +137,7 @@ void main() {
       expect(day.firstWhere((p) => p.id == 'lecture').category, 'uni');
       expect(restored.overrides['2026-11-17|mass']!['category'], 'catholic');
       expect(restored.showRecurringEventsInMonth, false);
-      expect(Schedule.decode(restored.encode()).items.length, 21);
+      expect(Schedule.decode(restored.encode()).items.length, 23);
     },
   );
   test(
@@ -185,7 +277,7 @@ void main() {
         restored.on('2026-11-17').firstWhere((p) => p.id == 'mass').status,
         'done',
       );
-      expect(restored.items.length, 20);
+      expect(restored.items.length, 22);
       expect(
         () => Schedule.decode(s.encode().replaceFirst('06:00', '99:00')),
         throwsFormatException,
