@@ -3,6 +3,17 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:daybook/schedule.dart';
 
 void main() {
+  test('daily view defaults to checklist and survives saved settings', () {
+    final schedule = Schedule.seed();
+    expect(schedule.showTimetable, false);
+    schedule.showTimetable = true;
+    expect(Schedule.decode(schedule.encode()).showTimetable, true);
+    final older = jsonDecode(schedule.encode()) as Map<String, dynamic>;
+    (older['settings'] as Map).remove('showTimetable');
+    expect(Schedule.decode(jsonEncode(older)).showTimetable, false);
+    (older['settings'] as Map)['showTimetable'] = 'yes';
+    expect(() => Schedule.decode(jsonEncode(older)), throwsFormatException);
+  });
   test(
     'brief preparation is two hours tomorrow with Thursday Wits-vendor deadline',
     () {

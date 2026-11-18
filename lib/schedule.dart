@@ -208,6 +208,7 @@ class Schedule {
   final Map<String, Map<String, dynamic>> overrides;
   final Set<String> appliedEventUpdates = {};
   bool showRecurringEventsInMonth = true;
+  bool showTimetable = false;
   void applyEventUpdates() {
     const briefDetails =
         'Prepare project briefs for EV/energy MSc vacation work and the go-kart project.\nInclude project scope and a bill of materials (BOM) sourced only from Wits vendors.\nCover the FHS exhibition and Science Forum go-kart demonstrations.\nInclude MSc research support and managing/supervising students during vacation work; vacation-work dates are not confirmed.\nBriefs, scope and BOM are needed by Thursday 19 November 2026.';
@@ -383,7 +384,10 @@ class Schedule {
     'version': 1,
     'items': items.map((p) => p.toJson()).toList(),
     'overrides': overrides,
-    'settings': {'showRecurringEventsInMonth': showRecurringEventsInMonth},
+    'settings': {
+      'showRecurringEventsInMonth': showRecurringEventsInMonth,
+      'showTimetable': showTimetable,
+    },
     'appliedEventUpdates': appliedEventUpdates.toList(),
   };
   String encode() => const JsonEncoder.withIndent('  ').convert(toJson());
@@ -437,7 +441,9 @@ class Schedule {
     if (settings != null &&
         (settings is! Map ||
             (settings['showRecurringEventsInMonth'] != null &&
-                settings['showRecurringEventsInMonth'] is! bool))) {
+                settings['showRecurringEventsInMonth'] is! bool) ||
+            (settings['showTimetable'] != null &&
+                settings['showTimetable'] is! bool))) {
       throw const FormatException('Invalid settings');
     }
     final appliedUpdates = j['appliedEventUpdates'] ?? <String>[];
@@ -448,6 +454,7 @@ class Schedule {
     return Schedule(items, patches)
       ..showRecurringEventsInMonth =
           (settings?['showRecurringEventsInMonth'] as bool?) ?? true
+      ..showTimetable = (settings?['showTimetable'] as bool?) ?? false
       ..appliedEventUpdates.addAll(appliedUpdates.cast<String>())
       ..applyEventUpdates();
   }

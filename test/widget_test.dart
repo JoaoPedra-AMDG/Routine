@@ -4,7 +4,146 @@ import 'package:daybook/routine_app.dart';
 import 'package:daybook/schedule.dart';
 import 'package:daybook/plan_editor.dart';
 
+Future<void> swipeSchedule(WidgetTester tester, double distance) async {
+  final area = tester.getRect(
+    find.byKey(const ValueKey('schedule-swipe-area')),
+  );
+  await tester.dragFrom(
+    Offset(area.center.dx, area.top + 100),
+    Offset(distance, 0),
+  );
+  await tester.pumpAndSettle();
+}
+
 void main() {
+  testWidgets(
+    'settings sits after Add and saves the daily view without inline controls',
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final saved = <String>[];
+      await tester.pumpWidget(
+        RoutineApp(
+          schedule: Schedule.seed(),
+          initialDate: parseDate('2026-11-17'),
+          writer: (s) async {
+            saved.add(s);
+          },
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Checklist'), findsOneWidget);
+      expect(find.text('Timetable'), findsNothing);
+      expect(
+        tester.getCenter(find.byKey(const ValueKey('settings-button'))).dx,
+        greaterThan(
+          tester.getCenter(find.byKey(const ValueKey('add-plan-button'))).dx,
+        ),
+      );
+      await tester.tap(find.byKey(const ValueKey('settings-button')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('daily-view-setting')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Timetable').last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Close'));
+      await tester.pumpAndSettle();
+      expect(find.text('Timetable'), findsOneWidget);
+      expect(find.text('Checklist'), findsNothing);
+      expect(Schedule.decode(saved.last).showTimetable, true);
+      await tester.pumpWidget(
+        RoutineApp(
+          key: UniqueKey(),
+          schedule: Schedule.decode(saved.last),
+          initialDate: parseDate('2026-11-17'),
+          writer: (_) async {},
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Timetable'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+  testWidgets(
+    'horizontal swipes change days while vertical scrolling keeps the date',
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpWidget(
+        RoutineApp(
+          schedule: Schedule.seed(),
+          initialDate: parseDate('2026-11-17'),
+          writer: (_) async {},
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byTooltip('Next day'), findsNothing);
+      expect(find.byTooltip('Previous day'), findsNothing);
+      await swipeSchedule(tester, -180);
+      expect(find.text('18 November 2026'), findsOneWidget);
+      await swipeSchedule(tester, 180);
+      expect(find.text('17 November 2026'), findsOneWidget);
+      await swipeSchedule(tester, 180);
+      expect(find.text('16 November 2026'), findsOneWidget);
+      final area = tester.getRect(
+        find.byKey(const ValueKey('schedule-swipe-area')),
+      );
+      await tester.dragFrom(
+        Offset(area.center.dx, area.top + 400),
+        const Offset(0, -220),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('16 November 2026'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+  testWidgets(
+    'timetable vertical drags reschedule and horizontal swipes change days',
+    (tester) async {
+      tester.view.physicalSize = const Size(1280, 1000);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final saved = <String>[];
+      await tester.pumpWidget(
+        RoutineApp(
+          schedule: Schedule.seed()..showTimetable = true,
+          initialDate: parseDate('2026-11-17'),
+          writer: (s) async {
+            saved.add(s);
+          },
+        ),
+      );
+      await tester.pumpAndSettle();
+      final task = find.byTooltip(
+        'Organize the house: 9am – 10am. Tap to move.',
+      );
+      final point = tester.getTopLeft(task) + const Offset(40, 6);
+      await tester.dragFrom(point, const Offset(0, -60));
+      await tester.pumpAndSettle();
+      expect(find.text('17 November 2026'), findsOneWidget);
+      expect(
+        Schedule.decode(
+          saved.last,
+        ).on('2026-11-17').firstWhere((p) => p.id == 'house').start,
+        480,
+      );
+      final movedTask = find.byTooltip(
+        'Organize the house: 8am – 9am. Tap to move.',
+      );
+      await tester.dragFrom(
+        tester.getTopLeft(movedTask) + const Offset(40, 6),
+        const Offset(-180, 0),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('18 November 2026'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
   testWidgets(
     'activity type picker offers the requested types and saves Friends',
     (tester) async {
@@ -216,8 +355,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('1 of 10 complete'), findsOneWidget);
     expect(saved, isNotEmpty);
-    await tester.tap(find.byTooltip('Next day'));
-    await tester.pumpAndSettle();
+    await swipeSchedule(tester, -180);
     expect(find.text('0 of 12 complete'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });

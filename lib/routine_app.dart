@@ -55,7 +55,8 @@ class _SchedulePageState extends State<SchedulePage> {
   late Schedule _schedule;
   late DateTime _day, _month, _miniMonth;
   late String? _storageError;
-  bool _monthView = false, _mobileTimeline = false, _saving = false;
+  bool _monthView = false, _saving = false;
+  double _swipeDistance = 0;
   Future<void> _saveQueue = Future.value();
   final _scroll = ScrollController();
   @override
@@ -75,7 +76,6 @@ class _SchedulePageState extends State<SchedulePage> {
   }
 
   String get _key => dateKey(_day);
-  bool get _wide => MediaQuery.sizeOf(context).width >= 1050;
   void _message(String text) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(text), duration: const Duration(seconds: 2)),
@@ -127,6 +127,22 @@ class _SchedulePageState extends State<SchedulePage> {
       }
     });
   }
+
+  Widget _swipeArea(Widget child) => GestureDetector(
+    key: const ValueKey('schedule-swipe-area'),
+    behavior: HitTestBehavior.translucent,
+    onHorizontalDragStart: (_) => _swipeDistance = 0,
+    onHorizontalDragUpdate: (details) => _swipeDistance += details.delta.dx,
+    onHorizontalDragCancel: () => _swipeDistance = 0,
+    onHorizontalDragEnd: (details) {
+      final velocity = details.primaryVelocity ?? 0;
+      if (_swipeDistance.abs() < 48 && velocity.abs() < 500) return;
+      final direction = _swipeDistance.abs() >= 48 ? _swipeDistance : velocity;
+      _shift(direction < 0 ? 1 : -1);
+      _swipeDistance = 0;
+    },
+    child: child,
+  );
 
   Future<void> _edit({Plan? plan, DateTime? day, bool event = false}) async {
     final selected = day ?? _day;
@@ -268,12 +284,42 @@ class _SchedulePageState extends State<SchedulePage> {
       builder:
           (c) => AlertDialog(
             title: const Text('Settings & backup'),
+            scrollable: true,
             content: SizedBox(
               width: 360,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  StatefulBuilder(
+                    builder:
+                        (context, updateSetting) =>
+                            DropdownButtonFormField<bool>(
+                              key: const ValueKey('daily-view-setting'),
+                              value: _schedule.showTimetable,
+                              isExpanded: true,
+                              decoration: const InputDecoration(
+                                labelText: 'Daily view',
+                              ),
+                              items: const [
+                                DropdownMenuItem(
+                                  value: false,
+                                  child: Text('Checklist'),
+                                ),
+                                DropdownMenuItem(
+                                  value: true,
+                                  child: Text('Timetable'),
+                                ),
+                              ],
+                              onChanged: (value) {
+                                if (value == null) return;
+                                setState(() => _schedule.showTimetable = value);
+                                updateSetting(() {});
+                                _save();
+                              },
+                            ),
+                  ),
+                  const SizedBox(height: 16),
                   if (shell.supportsInstallation) ...[
                     OutlinedButton.icon(
                       onPressed: () {
@@ -389,48 +435,50 @@ class _SchedulePageState extends State<SchedulePage> {
                 children: [
                   _toolbar(desktop),
                   Expanded(
-                    child: SingleChildScrollView(
-                      controller: _scroll,
-                      padding: EdgeInsets.fromLTRB(
-                        desktop ? 34 : 18,
-                        desktop ? 30 : 22,
-                        desktop ? 34 : 18,
-                        28,
-                      ),
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 1450),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            _heading(),
-                            if (_storageError != null) ...[
-                              const SizedBox(height: 18),
-                              Surface(
-                                color: const Color(0xfffff7d1),
-                                padding: const EdgeInsets.all(13),
-                                child: Row(
-                                  children: [
-                                    Expanded(
-                                      child: Text(
-                                        _storageError!,
-                                        style: const TextStyle(fontSize: 12),
+                    child: _swipeArea(
+                      SingleChildScrollView(
+                        controller: _scroll,
+                        padding: EdgeInsets.fromLTRB(
+                          desktop ? 34 : 18,
+                          desktop ? 30 : 22,
+                          desktop ? 34 : 18,
+                          28,
+                        ),
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 1450),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              _heading(),
+                              if (_storageError != null) ...[
+                                const SizedBox(height: 18),
+                                Surface(
+                                  color: const Color(0xfffff7d1),
+                                  padding: const EdgeInsets.all(13),
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          _storageError!,
+                                          style: const TextStyle(fontSize: 12),
+                                        ),
                                       ),
-                                    ),
-                                    TextButton(
-                                      onPressed: _save,
-                                      child: const Text('Retry'),
-                                    ),
-                                    TextButton(
-                                      onPressed: _backup,
-                                      child: const Text('Backup'),
-                                    ),
-                                  ],
+                                      TextButton(
+                                        onPressed: _save,
+                                        child: const Text('Retry'),
+                                      ),
+                                      TextButton(
+                                        onPressed: _backup,
+                                        child: const Text('Backup'),
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                              ),
+                              ],
+                              const SizedBox(height: 24),
+                              if (_monthView) _monthly() else _daily(),
                             ],
-                            const SizedBox(height: 24),
-                            if (_monthView) _monthly() else _daily(),
-                          ],
+                          ),
                         ),
                       ),
                     ),
@@ -476,17 +524,19 @@ class _SchedulePageState extends State<SchedulePage> {
         if (desktop)
           const Text('SAST', style: TextStyle(fontSize: 11, color: muted)),
         const SizedBox(width: 12),
-        IconButton(
-          tooltip: 'Settings & backup',
-          onPressed: _backup,
-          icon: const Icon(Icons.settings_outlined, size: 20),
-        ),
-        const SizedBox(width: 8),
         FilledButton.icon(
+          key: const ValueKey('add-plan-button'),
           onPressed:
               () => _edit(event: _monthView, day: _monthView ? _month : _day),
           icon: const Icon(Icons.add, size: 18),
           label: const Text('Add'),
+        ),
+        const SizedBox(width: 8),
+        IconButton(
+          key: const ValueKey('settings-button'),
+          tooltip: 'Settings & backup',
+          onPressed: _backup,
+          icon: const Icon(Icons.settings_outlined, size: 20),
         ),
       ],
     ),
@@ -504,16 +554,6 @@ class _SchedulePageState extends State<SchedulePage> {
           const SizedBox(height: 7),
           Row(
             children: [
-              IconButton(
-                tooltip: _monthView ? 'Previous month' : 'Previous day',
-                constraints: const BoxConstraints.tightFor(
-                  width: 32,
-                  height: 44,
-                ),
-                padding: EdgeInsets.zero,
-                onPressed: () => _shift(-1),
-                icon: const Icon(Icons.chevron_left, size: 20),
-              ),
               Flexible(
                 child: Tooltip(
                   message: 'Choose date',
@@ -543,16 +583,6 @@ class _SchedulePageState extends State<SchedulePage> {
                     ),
                   ),
                 ),
-              ),
-              IconButton(
-                tooltip: _monthView ? 'Next month' : 'Next day',
-                constraints: const BoxConstraints.tightFor(
-                  width: 32,
-                  height: 44,
-                ),
-                padding: EdgeInsets.zero,
-                onPressed: () => _shift(1),
-                icon: const Icon(Icons.chevron_right, size: 20),
               ),
               const SizedBox(width: 12),
               SegmentedButton<bool>(
@@ -894,7 +924,6 @@ class _SchedulePageState extends State<SchedulePage> {
         done = tasks.where((p) => p.status == 'done').length,
         skipped = tasks.where((p) => p.status == 'skipped').length,
         allDay = items.where((p) => p.allDay).toList();
-    final checklist = _checklist(items), timeline = _timeline(items);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -986,36 +1015,7 @@ class _SchedulePageState extends State<SchedulePage> {
           ),
         ],
         if (allDay.isNotEmpty) const SizedBox(height: 23),
-        if (!_wide) ...[
-          SegmentedButton<bool>(
-            segments: const [
-              ButtonSegment(
-                value: false,
-                icon: Icon(Icons.checklist, size: 17),
-                label: Text('Checklist'),
-              ),
-              ButtonSegment(
-                value: true,
-                icon: Icon(Icons.schedule, size: 17),
-                label: Text('Timetable'),
-              ),
-            ],
-            selected: {_mobileTimeline},
-            showSelectedIcon: false,
-            onSelectionChanged:
-                (s) => setState(() => _mobileTimeline = s.first),
-          ),
-          const SizedBox(height: 16),
-          if (_mobileTimeline) timeline else checklist,
-        ] else
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(flex: 6, child: checklist),
-              const SizedBox(width: 24),
-              Expanded(flex: 5, child: timeline),
-            ],
-          ),
+        _schedule.showTimetable ? _timeline(items) : _checklist(items),
         const SizedBox(height: 23),
         Surface(
           color: highlightColor,
@@ -1483,6 +1483,8 @@ class _SchedulePageState extends State<SchedulePage> {
                             width: width,
                             height: h,
                             child: Draggable<Plan>(
+                              affinity: Axis.vertical,
+                              axis: Axis.vertical,
                               data: p,
                               feedback: Material(
                                 color: Colors.transparent,
