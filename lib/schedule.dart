@@ -209,6 +209,8 @@ class Schedule {
   final Set<String> appliedEventUpdates = {};
   bool showRecurringEventsInMonth = true;
   void applyEventUpdates() {
+    const briefDetails =
+        'Prepare project briefs for EV/energy MSc vacation work and the go-kart project.\nInclude project scope and a bill of materials (BOM) sourced only from Wits vendors.\nCover the FHS exhibition and Science Forum go-kart demonstrations.\nInclude MSc research support and managing/supervising students during vacation work; vacation-work dates are not confirmed.\nBriefs, scope and BOM are needed by Thursday 19 November 2026.';
     const updates = [
       Plan(
         id: 'community-service-camp-2026',
@@ -232,11 +234,81 @@ class Schedule {
         notes:
             'Planned trip with friends, Thursday–Sunday. Travel times to confirm.',
       ),
+      Plan(
+        id: 'project-briefs-work-2026-11-18',
+        title: 'Prepare EV/go-kart project briefs',
+        date: '2026-11-18',
+        category: 'uni',
+        start: 900,
+        end: 1020,
+        notes: briefDetails,
+      ),
+      Plan(
+        id: 'project-briefs-due-2026-11-19',
+        title: 'Project briefs, scope & BOM due',
+        date: '2026-11-19',
+        kind: 'event',
+        category: 'uni',
+        allDay: true,
+        notes: briefDetails,
+      ),
+      Plan(
+        id: 'fhs-exhibition-2026-11-24',
+        title: 'FHS go-kart exhibition (provisional)',
+        date: '2026-11-24',
+        kind: 'event',
+        category: 'uni',
+        allDay: true,
+        timeTbc: true,
+        notes:
+            'Go-kart exhibition. Provisional date: Tuesday 24 November 2026. Confirm date, times and venue.',
+      ),
     ];
     for (final plan in updates) {
       if (appliedEventUpdates.add(plan.id) &&
           !items.any((p) => p.id == plan.id)) {
         items.add(plan);
+      }
+    }
+    if (appliedEventUpdates.add('sfsa-2026-details-v1')) {
+      const forumDetails =
+          'Science Forum South Africa 2026 (SFSA 2026), 1–4 December 2026.\nVenue: CSIR International Convention Centre, Pretoria, South Africa.\nTheme: Igniting Conversations about Science – From Research to Impact.\nCo-hosts: Department of Science, Technology and Innovation (DSTI) and Science Diplomacy Capital for Africa (SDCfA).\nFocus: STI financing, innovation and entrepreneurship, science diplomacy, emerging technologies, and the science-society nexus.\nGo-kart exhibition at the Science Forum.';
+      const forumUpdates = {
+        'ev-opening': (
+          title: 'Science Forum: opening',
+          notes: 'Ministerial Opening Plenary: 1 December, 16:00–18:30.',
+        ),
+        'ev-reception': (
+          title: 'Science Forum: reception',
+          notes: 'Welcome Reception: 1 December, 18:30–21:30.',
+        ),
+        'ev-days': (
+          title: 'Science Forum: sessions & exhibition',
+          notes:
+              '2–3 December: parallel sessions, plenaries, exhibitions and networking. Exact times to confirm.',
+        ),
+        'ev-close': (
+          title: 'Science Forum: closing by 2pm',
+          notes:
+              '4 December: closing sessions finish by 14:00. Start time to confirm.',
+        ),
+      };
+      for (final entry in forumUpdates.entries) {
+        final index = items.indexWhere((p) => p.id == entry.key);
+        if (index < 0) continue;
+        final current = items[index];
+        final defaultTitle =
+            current.title.startsWith('EV presentation') ||
+            current.title == 'EV reception';
+        final details = '$forumDetails\n${entry.value.notes}';
+        items[index] = current.withChanges({
+          'title': defaultTitle ? entry.value.title : current.title,
+          'category': current.category == 'work' ? 'uni' : current.category,
+          'notes':
+              current.notes.trim().isEmpty
+                  ? details
+                  : '${current.notes.trim()}\n\n$details',
+        });
       }
     }
   }

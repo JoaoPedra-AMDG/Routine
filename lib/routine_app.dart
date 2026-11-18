@@ -5,6 +5,9 @@ import 'schedule.dart';
 import 'storage.dart';
 import 'theme.dart';
 import 'plan_editor.dart';
+import 'web_shell_stub.dart'
+    if (dart.library.js_interop) 'web_shell_web.dart'
+    as shell;
 
 class RoutineApp extends StatelessWidget {
   const RoutineApp({
@@ -227,16 +230,67 @@ class _SchedulePageState extends State<SchedulePage> {
     }
   }
 
+  Future<void> _installWebApp() async {
+    String result;
+    try {
+      result = await shell.installApp();
+    } catch (_) {
+      result = 'unavailable';
+    }
+    if (!mounted) return;
+    if (result == 'accepted') {
+      _message('Installation requested.');
+    } else if (result == 'installed') {
+      _message('Routine is already installed.');
+    } else if (result != 'dismissed') {
+      await showDialog<void>(
+        context: context,
+        builder:
+            (c) => AlertDialog(
+              title: const Text('Install Routine'),
+              content: const Text(
+                'Android or desktop: open Routine in Chrome or Edge, then choose Install app or Add to Home screen from the browser menu.\n\niPhone or iPad: open Routine in Safari, then Share → Add to Home Screen.',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(c),
+                  child: const Text('Close'),
+                ),
+              ],
+            ),
+      );
+    }
+  }
+
   Future<void> _backup() async {
     await showDialog<void>(
       context: context,
       builder:
           (c) => AlertDialog(
-            title: const Text('Backup'),
-            content: const SizedBox(
+            title: const Text('Settings & backup'),
+            content: SizedBox(
               width: 360,
-              child: Text(
-                'Plans save on this device. No device sync. Copy a backup to keep or transfer your plans.',
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (shell.supportsInstallation) ...[
+                    OutlinedButton.icon(
+                      onPressed: () {
+                        Navigator.pop(c);
+                        _installWebApp();
+                      },
+                      icon: const Icon(Icons.install_mobile_outlined, size: 19),
+                      label: const Text('Install app'),
+                    ),
+                    const SizedBox(height: 12),
+                    const Divider(),
+                    const SizedBox(height: 12),
+                  ],
+                  const Text(
+                    'Plans save on this device. No device sync. Copy a backup to keep or transfer your plans.',
+                  ),
+                ],
               ),
             ),
             actions: [
@@ -423,7 +477,7 @@ class _SchedulePageState extends State<SchedulePage> {
           const Text('SAST', style: TextStyle(fontSize: 11, color: muted)),
         const SizedBox(width: 12),
         IconButton(
-          tooltip: 'Backup and restore',
+          tooltip: 'Settings & backup',
           onPressed: _backup,
           icon: const Icon(Icons.settings_outlined, size: 20),
         ),

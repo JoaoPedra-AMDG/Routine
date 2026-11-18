@@ -19,7 +19,7 @@ const categoryColors = <String, Color>{
   'catholic': Color(0xff9d50dd),
   'uni': Color(0xff579bfc),
   'family': Color(0xfffdab3d),
-  'friends': Color(0xffffcb00),
+  'friends': Color(0xffff5ac4),
   'exercise': Color(0xff00c875),
   'home': Color(0xffc4c4c4),
   'work': Color(0xff0073ea),

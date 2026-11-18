@@ -218,7 +218,7 @@ void main() {
     expect(saved, isNotEmpty);
     await tester.tap(find.byTooltip('Next day'));
     await tester.pumpAndSettle();
-    expect(find.text('0 of 11 complete'), findsOneWidget);
+    expect(find.text('0 of 12 complete'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
   testWidgets('phone day, calendar and editor fit without overflow', (

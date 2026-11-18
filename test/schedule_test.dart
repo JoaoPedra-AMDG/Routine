@@ -3,6 +3,85 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:daybook/schedule.dart';
 
 void main() {
+  test(
+    'brief preparation is two hours tomorrow with Thursday Wits-vendor deadline',
+    () {
+      final schedule = Schedule.seed();
+      final tomorrow = schedule.on('2026-11-18');
+      final brief = tomorrow.firstWhere(
+        (p) => p.id == 'project-briefs-work-2026-11-18',
+      );
+      expect(brief.isTask, true);
+      expect(brief.start, 900);
+      expect(brief.end - brief.start, 120);
+      expect(schedule.overlaps(brief, tomorrow), isEmpty);
+      expect(brief.notes, contains('Wits vendors'));
+      expect(schedule.on('2026-11-19').any((p) => p.id == brief.id), false);
+      final deadline = schedule
+          .on('2026-11-19')
+          .firstWhere((p) => p.id == 'project-briefs-due-2026-11-19');
+      expect(deadline.allDay, true);
+      expect(deadline.notes, contains('BOM'));
+      final fhs = schedule
+          .on('2026-11-24')
+          .firstWhere((p) => p.id == 'fhs-exhibition-2026-11-24');
+      expect(fhs.category, 'uni');
+      expect(fhs.title, contains('provisional'));
+      expect(fhs.allDay, true);
+      expect(fhs.timeTbc, true);
+    },
+  );
+  test(
+    'Science Forum details update existing entries without duplicating or losing edits',
+    () {
+      final old = Schedule.seed().toJson();
+      final newIds = {
+        'project-briefs-work-2026-11-18',
+        'project-briefs-due-2026-11-19',
+        'fhs-exhibition-2026-11-24',
+      };
+      (old['appliedEventUpdates'] as List).removeWhere(
+        (id) => newIds.contains(id) || id == 'sfsa-2026-details-v1',
+      );
+      final items = old['items'] as List;
+      items.removeWhere(
+        (p) => newIds.contains(p['id']) || p['id'] == 'ev-close',
+      );
+      final opening = items.firstWhere((p) => p['id'] == 'ev-opening');
+      opening['title'] = 'EV presentation: opening';
+      opening['category'] = 'work';
+      opening['notes'] = 'My go-kart preparation notes';
+      items.firstWhere((p) => p['id'] == 'ev-reception')['title'] =
+          'My reception plan';
+      old['overrides'] = {
+        '2026-12-01|ev-opening': {'start': '15:30', 'end': '18:30'},
+      };
+      final updated = Schedule.decode(jsonEncode(old));
+      final forumOpening = updated
+          .on('2026-12-01')
+          .firstWhere((p) => p.id == 'ev-opening');
+      expect(forumOpening.title, 'Science Forum: opening');
+      expect(forumOpening.category, 'uni');
+      expect(forumOpening.start, 930);
+      expect(
+        forumOpening.notes,
+        contains('CSIR International Convention Centre'),
+      );
+      expect(forumOpening.notes, contains('My go-kart preparation notes'));
+      expect(
+        updated.items.firstWhere((p) => p.id == 'ev-reception').title,
+        'My reception plan',
+      );
+      expect(updated.items.any((p) => p.id == 'ev-close'), false);
+      expect(updated.items.where((p) => p.id == 'ev-opening').length, 1);
+      final restored = Schedule.decode(updated.encode());
+      expect(
+        restored.items.firstWhere((p) => p.id == 'ev-opening').notes,
+        forumOpening.notes,
+      );
+      expect(restored.items.where((p) => newIds.contains(p.id)).length, 3);
+    },
+  );
   test('new trips include both dates and stay outside the timetable', () {
     final schedule = Schedule.seed();
     for (final day in [
@@ -60,7 +139,7 @@ void main() {
         '2026-11-17|mass': {'status': 'done', 'start': '08:00', 'end': '08:30'},
       };
       final updated = Schedule.decode(jsonEncode(old));
-      expect(updated.items.length, 22);
+      expect(updated.items.length, 25);
       expect(
         updated.on('2026-11-17').firstWhere((p) => p.id == 'mass').status,
         'done',
@@ -70,7 +149,7 @@ void main() {
         480,
       );
       updated.applyEventUpdates();
-      expect(updated.items.length, 22);
+      expect(updated.items.length, 25);
       final trip = updated.items.firstWhere(
         (p) => p.id == 'vall-friends-2026-11-19',
       );
@@ -137,7 +216,7 @@ void main() {
       expect(day.firstWhere((p) => p.id == 'lecture').category, 'uni');
       expect(restored.overrides['2026-11-17|mass']!['category'], 'catholic');
       expect(restored.showRecurringEventsInMonth, false);
-      expect(Schedule.decode(restored.encode()).items.length, 23);
+      expect(Schedule.decode(restored.encode()).items.length, 26);
     },
   );
   test(
@@ -277,7 +356,7 @@ void main() {
         restored.on('2026-11-17').firstWhere((p) => p.id == 'mass').status,
         'done',
       );
-      expect(restored.items.length, 22);
+      expect(restored.items.length, 25);
       expect(
         () => Schedule.decode(s.encode().replaceFirst('06:00', '99:00')),
         throwsFormatException,
