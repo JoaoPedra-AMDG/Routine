@@ -11,6 +11,8 @@
   window.addEventListener('appinstalled', () => {
     installed = true;
     deferredPrompt = null;
+    // Retain local plans and offline files when the browser supports it.
+    navigator.storage?.persist?.().catch(() => {});
   });
   window.requestRoutineInstall = async () => {
     if (installed) return 'installed';

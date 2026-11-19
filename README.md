@@ -14,14 +14,19 @@ flutter run -d chrome
 ```sh
 flutter analyze
 flutter test
-flutter build web --release --no-web-resources-cdn
+node --test test/*.test.mjs
+flutter build web --release --base-href /Routine/ --pwa-strategy none --no-web-resources-cdn
+node tool/build_offline.mjs
+node tool/verify_web_app.mjs
 ```
 
 Web output: `build/web`. Android, iOS and Windows platform projects are included. iOS builds require macOS; native builds require the corresponding platform toolchain.
 
 ## Install the web app
 
-Open Routine in Chrome or Edge and choose **Settings & backup → Install app**. If the browser does not provide a direct install prompt, use its **Install app** or **Add to Home screen** menu. On iPhone/iPad, use Safari’s **Share → Add to Home Screen**. The app caches offline resources after the first online visit.
+Open Routine online and wait for **Settings & backup → Available offline**, then choose **Install app**. If the browser does not provide a direct install prompt, use its **Install app** or **Add to Home screen** menu. On iPhone/iPad, use Safari’s **Share → Add to Home Screen**. After setup, reopening the app, checklists, calendars, edits and saved plans work without an internet connection.
+
+The app caches its full release package, including fonts and both CanvasKit variants, before offering installation. Cache paths are relative to the app scope, including GitHub Pages' `/Routine/` subdirectory. A failed update leaves the previous offline version available. Connections are only needed for initial setup and optional updates. Clearing browser/site data removes saved plans and offline files.
 
 The deployment validates the manifest scope, packaged installation integration, app icons and offline service-worker resources. No browser/site evaluation is required.
 

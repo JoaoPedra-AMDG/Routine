@@ -58,6 +58,7 @@ class _SchedulePageState extends State<SchedulePage> {
   bool _monthView = false, _saving = false;
   double _swipeDistance = 0;
   Future<void> _saveQueue = Future.value();
+  late Future<bool> _offlineReady;
   final _scroll = ScrollController();
   @override
   void initState() {
@@ -67,6 +68,7 @@ class _SchedulePageState extends State<SchedulePage> {
     _month = DateTime(_day.year, _day.month, 1, 12);
     _miniMonth = _month;
     _storageError = widget.storageError;
+    _offlineReady = shell.prepareOffline();
   }
 
   @override
@@ -321,13 +323,53 @@ class _SchedulePageState extends State<SchedulePage> {
                   ),
                   const SizedBox(height: 16),
                   if (shell.supportsInstallation) ...[
-                    OutlinedButton.icon(
-                      onPressed: () {
-                        Navigator.pop(c);
-                        _installWebApp();
-                      },
-                      icon: const Icon(Icons.install_mobile_outlined, size: 19),
-                      label: const Text('Install app'),
+                    StatefulBuilder(
+                      builder:
+                          (context, updateOffline) => FutureBuilder<bool>(
+                            future: _offlineReady,
+                            builder: (context, snapshot) {
+                              final waiting =
+                                  snapshot.connectionState !=
+                                  ConnectionState.done;
+                              final ready = snapshot.data == true;
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  Text(
+                                    waiting
+                                        ? 'Preparing offline…'
+                                        : ready
+                                        ? 'Available offline'
+                                        : 'Offline setup incomplete',
+                                  ),
+                                  if (!waiting && !ready)
+                                    TextButton(
+                                      onPressed:
+                                          () => updateOffline(() {
+                                            _offlineReady = shell
+                                                .prepareOffline(retry: true);
+                                          }),
+                                      child: const Text('Retry offline setup'),
+                                    ),
+                                  const SizedBox(height: 8),
+                                  OutlinedButton.icon(
+                                    onPressed:
+                                        ready
+                                            ? () {
+                                              Navigator.pop(c);
+                                              _installWebApp();
+                                            }
+                                            : null,
+                                    icon: const Icon(
+                                      Icons.install_mobile_outlined,
+                                      size: 19,
+                                    ),
+                                    label: const Text('Install app'),
+                                  ),
+                                ],
+                              );
+                            },
+                          ),
                     ),
                     const SizedBox(height: 12),
                     const Divider(),

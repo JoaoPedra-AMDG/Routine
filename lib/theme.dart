@@ -27,6 +27,7 @@ const categoryColors = <String, Color>{
 };
 ThemeData appTheme() => ThemeData(
   useMaterial3: true,
+  fontFamily: 'Roboto',
   scaffoldBackgroundColor: paper,
   colorScheme: ColorScheme.fromSeed(seedColor: primaryBlue).copyWith(
     primary: primaryBlue,

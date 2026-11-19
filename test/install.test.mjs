@@ -4,10 +4,10 @@ import vm from 'node:vm';
 import test from 'node:test';
 
 const script=readFileSync(new URL('../web/install.js',import.meta.url),'utf8');
-function browserShell(standalone=false){
+function browserShell(standalone=false,storage){
   const listeners=new Map();
   const window={matchMedia:()=>({matches:standalone}),addEventListener:(type,fn)=>listeners.set(type,fn)};
-  vm.runInNewContext(script,{window,navigator:{}});
+  vm.runInNewContext(script,{window,navigator:{storage}});
   return {window,listeners};
 }
 test('unsupported browsers fall back to manual installation',async()=>{
@@ -28,6 +28,16 @@ test('dismissal is respected and standalone launches do not offer a new prompt',
   listeners.get('beforeinstallprompt')({preventDefault(){},async prompt(){},userChoice:Promise.resolve({outcome:'dismissed'})});
   assert.equal(await window.requestRoutineInstall(),'dismissed');
   assert.equal(await browserShell(true).window.requestRoutineInstall(),'installed');
+});
+test('installation requests persistent storage without requiring a grant',async()=>{
+  let requested=0;
+  const {window,listeners}=browserShell(false,{async persist(){requested++;return false;}});
+  listeners.get('appinstalled')();
+  assert.equal(requested,1);
+  assert.equal(await window.requestRoutineInstall(),'installed');
+  const denied=browserShell(false,{async persist(){throw new Error('Unavailable');}});
+  denied.listeners.get('appinstalled')();
+  assert.equal(await denied.window.requestRoutineInstall(),'installed');
 });
 test('manifest scope and icons stay inside the Routine application',()=>{
   const manifest=JSON.parse(readFileSync(new URL('../web/manifest.json',import.meta.url),'utf8'));
